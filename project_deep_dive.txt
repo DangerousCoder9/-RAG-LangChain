@@ -1,0 +1,635 @@
+# 📘 GITHUB ISSUES RAG CHATBOT (FLASK + AWS BEDROCK VERSION)
+
+*(Complete breakdown for understanding + interviews)*
+
+---
+
+# 1. WHAT IS THIS PROJECT?
+
+This is a **RAG-based AI web application** that:
+
+* Fetches GitHub issues using API
+* Converts them into embeddings
+* Stores them in FAISS
+* Uses AWS Bedrock (Nova model) to generate answers
+* Provides a **Flask-based UI**
+
+👉 In simple terms:
+
+```text
+ChatGPT + Your GitHub Issues + Web UI
+```
+
+---
+
+# 2. WHAT PROBLEM DOES IT SOLVE?
+
+GitHub repositories often have:
+
+* Hundreds of issues
+* Poor keyword search
+* Difficult navigation
+
+This project solves that by:
+
+* Using **semantic search (meaning-based)**
+* Letting users ask natural language questions
+
+Example:
+
+```text
+User: "Login problem"
+System finds:
+- session error
+- auth bug
+- login crash
+```
+
+👉 Even if “login” word is not exact match
+
+---
+
+# 3. TECH STACK (YOUR VERSION)
+
+---
+
+## 🔹 Flask
+
+* Web framework
+* Handles frontend + backend
+
+---
+
+## 🔹 FAISS
+
+* Vector database
+* Stores embeddings
+* Enables fast similarity search
+
+---
+
+## 🔹 HuggingFace Embeddings
+
+* Model: `all-MiniLM-L6-v2`
+* Converts text → vectors
+
+---
+
+## 🔹 AWS Bedrock
+
+* LLM provider
+* Model used: `amazon.nova-micro-v1:0`
+* Generates answers
+
+---
+
+## 🔹 GitHub API
+
+* Fetches real issues
+* Provides raw data
+
+---
+
+# 4. ARCHITECTURE (HOW EVERYTHING CONNECTS)
+
+```text
+User (Browser)
+      ↓
+Flask App
+      ↓
+Retriever (FAISS)
+      ↓
+Relevant GitHub Issues
+      ↓
+Prompt Creation
+      ↓
+AWS Bedrock LLM
+      ↓
+Final Answer
+      ↓
+Displayed in UI
+```
+
+---
+
+# 5. DATA FLOW (RUNTIME)
+
+---
+
+## STEP 1 — User Input
+
+User types:
+
+```text
+"Flash messages not working"
+```
+
+---
+
+## STEP 2 — Retrieval
+
+```python
+context = search_issues(question)
+```
+
+👉 FAISS:
+
+* converts query → vector
+* finds similar issue vectors
+
+---
+
+## STEP 3 — Context Creation
+
+```text
+Top 5 issues combined → context
+```
+
+---
+
+## STEP 4 — Prompt Engineering
+
+```python
+prompt = f"""
+Context: {context}
+Question: {question}
+"""
+```
+
+👉 Controls LLM behavior
+
+---
+
+## STEP 5 — LLM Call
+
+```python
+ask_llm(prompt)
+```
+
+👉 AWS Bedrock processes:
+
+* reads context
+* understands question
+* generates answer
+
+---
+
+## STEP 6 — Response
+
+```text
+Clean answer → Flask → UI
+```
+
+---
+
+# 6. CODE BREAKDOWN (DETAILED)
+
+---
+
+## 🔹 connect_to_vector_store()
+
+👉 Purpose:
+
+```text
+Initialize FAISS vector database
+```
+
+Steps:
+
+1. Load embedding model
+2. Create FAISS store
+3. Return vector store
+
+---
+
+## 🔹 fetch_github_issues()
+
+👉 Purpose:
+
+```text
+Fetch real data (issues)
+```
+
+Returns:
+
+```text
+List of Documents
+```
+
+---
+
+## 🔹 vector_store.add_documents()
+
+👉 What happens:
+
+```text
+Each issue → embedding → stored in FAISS
+```
+
+---
+
+## 🔹 retriever
+
+```python
+retriever = vector_store.as_retriever(k=5)
+```
+
+👉 Role:
+
+```text
+Search most relevant documents
+```
+
+---
+
+## 🔹 search_issues()
+
+👉 This is:
+
+```text
+RAG → RETRIEVAL STEP
+```
+
+* Takes query
+* returns relevant issues
+
+---
+
+## 🔹 ask_llm()
+
+👉 This is:
+
+```text
+RAG → GENERATION STEP
+```
+
+Steps:
+
+1. Build JSON request
+2. Call AWS Bedrock
+3. Extract response
+4. Clean output
+
+---
+
+## 🔹 Flask route
+
+```python
+@app.route("/")
+```
+
+👉 Role:
+
+```text
+Connect frontend + backend + AI
+```
+
+---
+
+# 7. KEY CONCEPTS
+
+---
+
+## 🔹 RAG (Retrieval Augmented Generation)
+
+```text
+Search first → then answer
+```
+
+Without RAG:
+
+* LLM guesses
+
+With RAG:
+
+* LLM reads real data
+
+---
+
+## 🔹 Embeddings
+
+```text
+Text → Vector (numbers)
+```
+
+Used for:
+
+* similarity search
+
+---
+
+## 🔹 FAISS
+
+```text
+Vector database
+```
+
+Fast because:
+
+* uses mathematical distance
+
+---
+
+## 🔹 LLM (AWS Bedrock)
+
+```text
+Generates final answer
+```
+
+---
+
+## 🔹 Prompt Engineering
+
+Controls:
+
+* answer format
+* clarity
+* length
+
+---
+
+# 8. INTERVIEW QUESTIONS (IMPORTANT)
+
+---
+
+### Q: What is RAG?
+
+👉
+
+```text
+**RAG (Retrieval-Augmented Generation)** = a method that makes AI answers more accurate by **adding real, external information before generating a response**.
+
+---
+
+### Simple idea
+
+Instead of relying only on what it already “knows,” the AI:
+
+1. **Searches (retrieves)** relevant information
+2. **Uses that information to generate** a better answer
+
+---
+
+### Step-by-step flow
+
+1. **User asks a question**
+2. System **retrieves data** from sources (documents, PDFs, databases, websites)
+3. That data is **given to the AI model**
+4. AI **generates an answer using both the question + retrieved data**
+
+---
+
+### Easy example
+
+You ask:
+➡️ “What are my company’s leave policies?”
+
+* Normal AI → guesses or gives generic answer
+* **RAG system → searches your company documents → gives exact policy**
+
+---
+
+### Why RAG is useful
+
+* More **accurate** (uses real data)
+* More **up-to-date**
+* Can use **private data** (like company files)
+* Reduces hallucinations (wrong answers)
+
+---
+
+### One-line summary
+
+**RAG = Search first → then answer using that data**
+
+```
+
+---
+
+### Q: Why FAISS?
+
+👉
+
+```text
+**FAISS** = a library used to **quickly search similar vectors (embeddings)**.
+
+---
+
+### Simple idea
+
+When text/images are converted into embeddings (numbers), FAISS helps:
+➡️ **find the most similar ones very fast**
+
+---
+
+### Why FAISS is used
+
+* Works with **semantic search** (meaning-based, not keyword-based)
+* Handles **millions/billions of vectors efficiently**
+* Much faster than normal search methods
+
+---
+
+### How it works (basic flow)
+
+1. Convert data → **embeddings (vectors)**
+2. Store them in FAISS index
+3. Convert query → embedding
+4. FAISS finds **closest matching vectors**
+
+---
+
+### Easy example
+
+You search:
+➡️ “cheap smartphones”
+
+* FAISS doesn’t look for exact words
+* It finds items with **similar meaning** (budget phones)
+
+---
+
+### One-line summary
+
+**FAISS = super-fast similarity search for embeddings**
+
+```
+
+---
+
+### Q: Why embeddings?
+
+👉
+
+```text
+**Embeddings** = a way to **turn text into numbers (vectors) so machines can understand meaning**.
+
+---
+
+### Simple idea
+
+Computers don’t understand words directly, so embeddings:
+➡️ convert text into vectors that capture **meaning**
+
+---
+
+### Why embeddings are used
+
+* Enable **semantic search** (meaning-based, not exact words)
+* Help compare text using **similarity**
+* Power systems like **RAG, FAISS, chatbots**
+
+---
+
+### How it works (basic flow)
+
+1. Text → converted into **vector (list of numbers)**
+2. Similar meanings → **vectors are close**
+3. Different meanings → **vectors are far apart**
+
+---
+
+### Easy example
+
+* “dog” and “puppy” → vectors are **close**
+* “dog” and “car” → vectors are **far**
+
+---
+
+### One-line summary
+
+**Embeddings = convert text into vectors so similarity can be measured**
+
+```
+
+---
+
+### Q: Why AWS Bedrock?
+
+👉
+
+```text
+**AWS Bedrock** = a **managed service to use powerful AI models without hosting or managing them yourself**.
+
+---
+
+### Simple idea
+
+Instead of running models on your own servers:
+➡️ Bedrock lets you **call ready-made LLMs via API**
+
+---
+
+### Why Bedrock is used
+
+* No need to **deploy or maintain models**
+* Access to multiple models (like Claude, Titan, etc.)
+* Built-in **scalability and security**
+* Easy integration with AWS ecosystem
+
+---
+
+### How it works (basic flow)
+
+1. Send prompt via API
+2. Bedrock routes it to a model
+3. Model generates response
+4. You get output
+
+---
+
+### Easy example
+
+You build a chatbot:
+
+* Without Bedrock → manage servers + models
+* With Bedrock → just **API call → get response**
+
+---
+
+### One-line summary
+
+**AWS Bedrock = use LLMs via API without managing infrastructure**
+
+```
+
+---
+
+### Q: How does your system work?
+
+👉
+
+```text
+**System flow** = how your RAG pipeline produces answers step by step.
+
+---
+
+### Simple flow
+
+➡️ **User query → embedding → FAISS search → context → LLM → answer**
+
+---
+
+### Step-by-step
+
+1. **User asks a question**
+2. Question → converted into **embedding**
+3. **FAISS** searches similar vectors
+4. Relevant data (context) is retrieved
+5. Context + question → sent to LLM
+6. LLM generates final answer
+
+---
+
+### Easy example
+
+User: “Explain leave policy”
+
+* Converted to embedding
+* FAISS finds similar documents
+* Relevant policy text is retrieved
+* LLM reads it → gives accurate answer
+
+---
+
+### One-line summary
+
+**Search relevant data → give it to LLM → generate accurate answer**
+
+```
+
+---
+
+# 10. IMPROVEMENTS
+
+* Add chat history
+* Deploy online
+* Save FAISS index
+* Add multiple repos
+* Improve UI
+
+---
+
+# 11. FINAL MENTAL MODEL
+
+```text
+GitHub Issues
+     ↓
+Embeddings
+     ↓
+FAISS
+     ↓
+User Query
+     ↓
+Retriever
+     ↓
+Context
+     ↓
+AWS LLM
+     ↓
+Answer
+     ↓
+Flask UI
+```
+
+---
